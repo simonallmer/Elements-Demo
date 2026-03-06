@@ -13,10 +13,12 @@ const CARD_TYPES = {
 
 // --- Game State ---
 let state = {
-    players: [], // Array of arrays (hands)
+    // players will now be objects: { hand: [...cards], type: 'human'|'computer', name: 'PLAYER 1' }
+    players: [],
     deck: [],
     discardPile: [],
     currentPlayer: 0,
+    viewingPlayer: 0, // which player's hand should be shown on screen
     direction: 1, // 1 (clockwise) or -1 (counter-clockwise)
     topCard: null, // The effective top card (can be overridden by Elements choice)
     forcedColor: null, // If Elements card was played
@@ -26,6 +28,22 @@ let state = {
     currentChoice: { color: null, shape: null }, // Tracks current turn's constraint
     sortMode: 'shape' // 'color' or 'shape' (starts as 'shape' so first click becomes 'color')
 };
+
+// flag to prevent computer turns from running when game is not active
+let gameActive = false;
+
+// track current/previous screens for return from rules
+let currentScreenName = null;
+let prevScreenName = null;
+
+// temporary setup vars
+let selectedPlayerCount = null;
+let selectedPlayerTypes = []; // array of 'human'|'computer'
+let selectedPlayerNames = []; // array of strings
+
+// load saved names from localStorage
+const savedNames = JSON.parse(localStorage.getItem('elementNames') || '[]');
+
 
 // --- DOM Elements ---
 const screens = {
@@ -69,9 +87,18 @@ function init() {
 
     ui.rulesBtn.addEventListener('click', () => showScreen('rules'));
 
-    // Fix: Close Rules button
+    // Close Rules button - return to previous screen if available
     document.getElementById('btn-close-rules').addEventListener('click', () => {
-        showScreen('menu');
+        if (prevScreenName && prevScreenName !== 'rules') {
+            showScreen(prevScreenName);
+        } else {
+            showScreen('menu');
+        }
+    });
+
+    // Pause menu rules button
+    document.getElementById('btn-pause-rules').addEventListener('click', () => {
+        showScreen('rules');
     });
 
     ui.menuGameBtn.addEventListener('click', () => {
@@ -103,17 +130,54 @@ function init() {
         });
     });
 
-    // Player Count Buttons (old style)
+    // Player Count Buttons (now used to configure types)
     document.querySelectorAll('.btn-count').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const count = parseInt(e.target.dataset.count);
-            startGame(count);
+            selectedPlayerCount = count;
+            // reset previous types
+            selectedPlayerTypes = Array(count).fill('human');
+            // initialize or trim names array
+            selectedPlayerNames = [];
+            const stored = JSON.parse(localStorage.getItem('elementNames') || '[]');
+            for (let i = 0; i < count; i++) {
+                selectedPlayerNames[i] = stored[i] || `Player ${i + 1}`;
+            }
+            renderPlayerTypeSelectors(count);
+            document.getElementById('btn-reset-names').classList.remove('hidden');
+            // show begin button
+            document.getElementById('btn-begin-game').classList.remove('hidden');
         });
+    });
+
+    // name reset button
+    document.getElementById('btn-reset-names').addEventListener('click', () => {
+        if (selectedPlayerCount) {
+            for (let i = 0; i < selectedPlayerCount; i++) {
+                selectedPlayerNames[i] = `Player ${i + 1}`;
+            }
+            localStorage.removeItem('elementNames');
+            renderPlayerTypeSelectors(selectedPlayerCount);
+        }
+    });
+
+    // Begin game after configuration
+    document.getElementById('btn-begin-game').addEventListener('click', () => {
+        if (selectedPlayerCount) {
+            startGame(selectedPlayerCount, selectedPlayerTypes, selectedPlayerNames);
+        }
     });
 
     // Back button from setup
     document.getElementById('btn-back-menu').addEventListener('click', () => {
         showScreen('menu');
+        // clear any configuration UI
+        selectedPlayerCount = null;
+        selectedPlayerTypes = [];
+        const config = document.getElementById('player-type-config');
+        config.classList.add('hidden');
+        config.innerHTML = '';
+        document.getElementById('btn-begin-game').classList.add('hidden');
     });
 
     // Elements Modal Selection Logic
@@ -156,6 +220,91 @@ function init() {
     });
 }
 
+// create toggle rows for each player slot when count is chosen
+function renderPlayerTypeSelectors(count) {
+    const container = document.getElementById('player-type-config');
+    container.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+        const row = document.createElement('div');
+        row.className = 'player-type-row';
+
+        // name input
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'player-name-input';
+        nameInput.value = selectedPlayerNames[i] || `Player ${i + 1}`;
+        // when focusing if the value is still default label, clear it for easier typing
+        nameInput.addEventListener('focus', (e) => {
+            const val = e.target.value;
+            if (/^Player \d+$/.test(val)) {
+                e.target.value = '';
+            }
+        });
+        // if user leaves empty, restore default
+        nameInput.addEventListener('blur', (e) => {
+            if (e.target.value.trim() === '') {
+                e.target.value = `Player ${i + 1}`;
+                selectedPlayerNames[i] = e.target.value;
+                localStorage.setItem('elementNames', JSON.stringify(selectedPlayerNames));
+            }
+        });
+        nameInput.addEventListener('input', (e) => {
+            selectedPlayerNames[i] = e.target.value;
+            // save immediately
+            localStorage.setItem('elementNames', JSON.stringify(selectedPlayerNames));
+        });
+        row.appendChild(nameInput);
+
+        // first player always human, no buttons
+        if (i === 0) {
+            const hint = document.createElement('span');
+            hint.textContent = 'Human';
+            row.appendChild(hint);
+        } else {
+            const humanBtn = document.createElement('button');
+            humanBtn.className = 'btn-toggle-type';
+            humanBtn.dataset.player = i;
+            humanBtn.dataset.type = 'human';
+            humanBtn.textContent = 'Human';
+            humanBtn.addEventListener('click', togglePlayerType);
+
+            const cpuBtn = document.createElement('button');
+            cpuBtn.className = 'btn-toggle-type';
+            cpuBtn.dataset.player = i;
+            cpuBtn.dataset.type = 'computer';
+            cpuBtn.textContent = 'Computer';
+            cpuBtn.addEventListener('click', togglePlayerType);
+
+            // mark active according to current selection
+            if (selectedPlayerTypes[i] === 'human') humanBtn.classList.add('active');
+            else cpuBtn.classList.add('active');
+
+            row.appendChild(humanBtn);
+            row.appendChild(cpuBtn);
+        }
+
+        container.appendChild(row);
+    }
+    container.classList.remove('hidden');
+}
+
+
+function togglePlayerType(e) {
+    const btn = e.currentTarget;
+    const index = parseInt(btn.dataset.player);
+    const type = btn.dataset.type;
+    selectedPlayerTypes[index] = type;
+    // update button active states
+    const rows = document.querySelectorAll('.player-type-row');
+    const row = rows[index];
+    if (row) {
+        row.querySelectorAll('.btn-toggle-type').forEach(b => {
+            if (b.dataset.type === type) b.classList.add('active');
+            else b.classList.remove('active');
+        });
+    }
+}
+
 function checkElementsSelection() {
     const transformBtn = document.getElementById('btn-transform');
     if (state.tempElementsChoice && state.tempElementsChoice.color && state.tempElementsChoice.shape) {
@@ -166,6 +315,11 @@ function checkElementsSelection() {
 }
 
 function showScreen(screenName) {
+    // remember previous screen
+    if (currentScreenName !== screenName) {
+        prevScreenName = currentScreenName;
+    }
+
     Object.values(screens).forEach(s => s.classList.add('hidden'));
     Object.values(screens).forEach(s => s.classList.remove('active'));
 
@@ -173,6 +327,12 @@ function showScreen(screenName) {
         screens[screenName].classList.remove('hidden');
         screens[screenName].classList.add('active');
     }
+
+    // track current
+    currentScreenName = screenName;
+
+    // Set gameActive flag based on which screen is shown
+    gameActive = (screenName === 'game');
 }
 
 function hideScreen(screenName) {
@@ -233,17 +393,38 @@ function shuffle(array) {
 
 // --- Game Logic ---
 
-function startGame(playerCount) {
-    state.players = Array(playerCount).fill().map(() => []);
+function startGame(playerCount, types, names) {
+    // store names in localStorage
+    if (names && names.length) {
+        localStorage.setItem('elementNames', JSON.stringify(names));
+    }
+
+    // build player objects
+    state.players = [];
+    for (let i = 0; i < playerCount; i++) {
+        const type = (types && types[i]) || 'human';
+        let name;
+        if (names && names[i]) {
+            name = names[i];
+        } else {
+            name = type === 'computer' ? `COMPUTER ${i + 1}` : `PLAYER ${i + 1}`;
+        }
+        state.players.push({ hand: [], type, name });
+    }
+
     state.deck = createDeck();
     state.discardPile = [];
     state.currentPlayer = Math.floor(Math.random() * playerCount); // Random start
     state.direction = 1;
 
+    // initial viewing player should be first human or current if human
+    state.viewingPlayer = state.players.findIndex(p => p.type === 'human');
+    if (state.viewingPlayer === -1) state.viewingPlayer = 0;
+
     // Deal 8 cards to each
     for (let i = 0; i < playerCount; i++) {
         for (let j = 0; j < 8; j++) {
-            state.players[i].push(state.deck.pop());
+            state.players[i].hand.push(state.deck.pop());
         }
     }
 
@@ -274,16 +455,29 @@ function resetTurnState() {
 }
 
 function updatePassScreen() {
-    ui.nextPlayerName.textContent = `PLAYER ${state.currentPlayer + 1}`;
+    ui.nextPlayerName.textContent = state.players[state.currentPlayer].name;
 }
 
 function startTurn() {
     showScreen('game');
+    ui.messageArea.textContent = ""; // Clear any previous messages
+
+    // if a human just received the device, make sure we view their hand
+    if (state.players[state.currentPlayer].type === 'human') {
+        state.viewingPlayer = state.currentPlayer;
+    }
+
     renderGame();
 
     // Check if deck is empty -> Game End
     if (state.deck.length === 0) {
         endGameByEmptyDeck();
+        return;
+    }
+
+    // if it's a computer's turn, immediately kick off its logic
+    if (state.players[state.currentPlayer].type === 'computer') {
+        handleComputerTurn();
     }
 }
 
@@ -312,24 +506,150 @@ function getEffectiveTopCard() {
     return actualTop;
 }
 
-function isValidMove(card) {
+// --- AI / Computer player helpers ---
+
+// return array of indices in the specified player's hand that are playable given current turn state
+function getValidMoves(playerIndex) {
+    const hand = state.players[playerIndex].hand;
+    // temporarily remember current player and cardsPlayedThisTurn so we can call isValidMove safely
+    const origPlayer = state.currentPlayer;
+    const origCards = state.cardsPlayedThisTurn;
+    state.currentPlayer = playerIndex;
+    // cardsPlayedThisTurn should already reflect how many this player has played in the current turn
+    const valid = hand.map((card, idx) => isValidMove(card, playerIndex) ? idx : -1).filter(i => i >= 0);
+    state.currentPlayer = origPlayer;
+    state.cardsPlayedThisTurn = origCards;
+    return valid;
+}
+
+// choose an index from valid moves using medium difficulty heuristics
+function chooseComputerCard(playerIndex) {
+    const valid = getValidMoves(playerIndex);
+    if (valid.length === 0) return null;
+
+    // For simplicity, just play the first valid card
+    return valid[0];
+}
+
+// render the player circle illustration
+function renderPlayerCircle() {
+    const numPlayers = state.players.length;
+    const radius = 25;
+    const centerX = 40;
+    const centerY = 40;
+    const angleStep = (2 * Math.PI) / numPlayers;
+
+    let svg = `<svg width="80" height="80" viewBox="0 0 80 80">`;
+
+    // Calculate positions for all players first
+    const positions = [];
+    for (let i = 0; i < numPlayers; i++) {
+        const angle = i * angleStep - Math.PI / 2; // Start from top
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+        positions.push({ x, y });
+    }
+
+    // Draw line from current to next player
+    let nextPlayer = state.currentPlayer + state.direction;
+    if (nextPlayer >= numPlayers) nextPlayer = 0;
+    if (nextPlayer < 0) nextPlayer = numPlayers - 1;
+    
+    const currentPos = positions[state.currentPlayer];
+    const nextPos = positions[nextPlayer];
+    svg += `<line x1="${currentPos.x}" y1="${currentPos.y}" x2="${nextPos.x}" y2="${nextPos.y}" stroke="var(--accent-green)" stroke-width="1.5" opacity="0.6" />`;
+
+    // Draw circles and labels
+    for (let i = 0; i < numPlayers; i++) {
+        const { x, y } = positions[i];
+        const isCurrent = i === state.currentPlayer;
+        const fill = isCurrent ? 'var(--accent-blue)' : 'var(--text-color)';
+        const opacity = isCurrent ? '1' : '0.5';
+        const label = state.players[i].type === 'computer' ? `C${i + 1}` : `${i + 1}`;
+
+        svg += `<circle cx="${x}" cy="${y}" r="8" fill="${fill}" opacity="${opacity}" />`;
+        svg += `<text x="${x}" y="${y + 3}" text-anchor="middle" font-size="8" fill="var(--bg-color)" font-weight="bold">${label}</text>`;
+    }
+
+    svg += `</svg>`;
+    document.getElementById('player-circle').innerHTML = svg;
+}
+
+// run the computer's turn; plays cards one at a time with brief pauses so the human player can watch
+function animateComputerPlay(callback) {
+    // create a ghost card from top center to discard pile
+    const cardEl = document.createElement('div');
+    cardEl.className = 'flying-card computer-play';
+    const startTop = 0;
+    const startLeft = window.innerWidth / 2;
+    cardEl.style.top = `${startTop}px`;
+    cardEl.style.left = `${startLeft}px`;
+    document.body.appendChild(cardEl);
+    const discRect = ui.discardPile.getBoundingClientRect();
+    // force reflow
+    cardEl.offsetHeight;
+    cardEl.style.top = `${discRect.top}px`;
+    cardEl.style.left = `${discRect.left}px`;
+    cardEl.style.transform = `scale(0.5)`;
+    cardEl.style.opacity = '0';
+    setTimeout(() => {
+        cardEl.remove();
+        if (callback) callback();
+    }, 500);
+}
+
+function handleComputerTurn() {
+    // Check if game is still active before proceeding
+    if (!gameActive || state.players[state.currentPlayer].type !== 'computer') return;
+
+
+    const cardIndex = chooseComputerCard(state.currentPlayer);
+    if (cardIndex !== null) {
+        // show animation then play
+        animateComputerPlay(() => {
+            playCard(cardIndex);
+            if (state.players[state.currentPlayer].type === 'computer' && state.cardsPlayedThisTurn > 0) {
+                setTimeout(handleComputerTurn, 500);
+            }
+        });
+        return;
+    }
+
+    // no valid moves: draw 3 and skip turn
+    const count = Math.min(3, state.deck.length);
+    for (let i = 0; i < count; i++) {
+        if (state.deck.length > 0) {
+            state.players[state.currentPlayer].hand.push(state.deck.pop());
+        }
+    }
+    state.direction *= -1;
+    ui.messageArea.textContent = 'Computer draws 3';
+    renderGame();
+    // end the turn after a short pause so human can read message
+    setTimeout(() => {
+        if (gameActive) endTurn();
+    }, 800);
+}
+
+
+function isValidMove(card, playerIndex = state.currentPlayer) {
     const top = getEffectiveTopCard();
+    const hand = state.players[playerIndex].hand;
 
     // 1. Elements Card Rules
     if (card.type === CARD_TYPES.ELEMENTS) {
         // "An Elements Card cannot be played as the last card from your hand."
-        if (state.players[state.currentPlayer].length === 1) return false;
+        if (hand.length === 1) return false;
 
         // "When you choose the Elements Card, no other card can be played in your turn."
         // This implies it must be the ONLY card played.
-        if (state.cardsPlayedThisTurn > 0) return false;
+        if (state.cardsPlayedThisTurn > 0 && playerIndex === state.currentPlayer) return false;
 
         return true;
     }
 
     // 1b. Prevent playing a card if it would leave ONLY an Elements card in hand
     // (because Elements card cannot be played as last card)
-    const hand = state.players[state.currentPlayer];
     if (hand.length === 2) {
         // Check if the OTHER card (not the one being played) is an Elements card
         const otherCard = hand.find(c => c !== card);
@@ -388,7 +708,7 @@ function isValidMove(card) {
 }
 
 function playCard(cardIndex) {
-    const hand = state.players[state.currentPlayer];
+    const hand = state.players[state.currentPlayer].hand;
     const card = hand[cardIndex];
 
     // Capture the effective top card BEFORE we play the new one
@@ -409,6 +729,14 @@ function playCard(cardIndex) {
 
     // Handle Elements Card
     if (card.type === CARD_TYPES.ELEMENTS) {
+        if (state.players[state.currentPlayer].type === 'computer') {
+            // computer picks a random color/shape and ends its turn
+            const pickColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+            const pickShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+            resolveElementsCard(pickColor, pickShape);
+            return;
+        }
+
         // Elements card is played. User must choose. Turn will end after choice.
         ui.elementsModal.classList.remove('hidden');
 
@@ -565,7 +893,7 @@ function animateDrawCard(callback) {
 function finishDrawTurn(count) {
     for (let i = 0; i < count; i++) {
         if (state.deck.length > 0) {
-            state.players[state.currentPlayer].push(state.deck.pop());
+            state.players[state.currentPlayer].hand.push(state.deck.pop());
         }
     }
 
@@ -579,7 +907,7 @@ function finishDrawTurn(count) {
 }
 
 function sortHand() {
-    const hand = state.players[state.currentPlayer];
+    const hand = state.players[state.currentPlayer].hand;
 
     // Toggle Sort Mode
     state.sortMode = state.sortMode === 'color' ? 'shape' : 'color';
@@ -639,8 +967,20 @@ function endTurn() {
     state.currentPlayer = next;
     resetTurnState();
 
-    showScreen('pass');
-    updatePassScreen();
+    // Check if there's only one human player
+    const humanCount = state.players.filter(p => p.type === 'human').length;
+    if (humanCount === 1) {
+        // Skip pass screen entirely when only one human, but add a brief delay for the player to see the board
+        setTimeout(() => startTurn(), 1500);
+    } else {
+        // Normal behavior: skip pass only for computers
+        if (state.players[state.currentPlayer].type === 'computer') {
+            startTurn();
+        } else {
+            showScreen('pass');
+            updatePassScreen();
+        }
+    }
 }
 
 function endGameByEmptyDeck() {
@@ -664,12 +1004,12 @@ function endGameByEmptyDeck() {
 function showPauseMenu() {
     // Populate Stats
     ui.pauseStats.innerHTML = '';
-    state.players.forEach((hand, index) => {
+    state.players.forEach((player, index) => {
         const row = document.createElement('div');
         row.className = 'stat-row';
         row.innerHTML = `
-            <span class="stat-player">PLAYER ${index + 1}</span>
-            <span class="stat-count">${hand.length} Cards</span>
+            <span class="stat-player">${player.name}</span>
+            <span class="stat-count">${player.hand.length} Cards</span>
         `;
         ui.pauseStats.appendChild(row);
     });
@@ -680,21 +1020,28 @@ function showPauseMenu() {
 // --- Rendering ---
 
 function renderGame() {
-    ui.currentPlayerDisplay.textContent = `PLAYER ${state.currentPlayer + 1}`;
-    ui.cardCountDisplay.textContent = `Cards: ${state.players[state.currentPlayer].length}`;
+    // Show who currently has the turn
+    ui.currentPlayerDisplay.textContent = state.players[state.currentPlayer].name;
+
+    // card count shows for the viewing player (the human holding device) so it doesn't jump around
+    const viewingCount = state.players[state.viewingPlayer].hand.length;
+    ui.cardCountDisplay.textContent = `Cards: ${viewingCount}`;
+
+    // Render player circle
+    renderPlayerCircle();
 
     // Render Opponents Stats
     ui.opponentsStats.innerHTML = '';
-    state.players.forEach((hand, index) => {
+    state.players.forEach((player, index) => {
         if (index !== state.currentPlayer) {
             const row = document.createElement('div');
             row.className = 'opponent-row';
-            // Highlight if they are close to winning (e.g. 1 card)
-            const count = hand.length;
+            const count = player.hand.length;
             const warningClass = count === 1 ? 'style="color: var(--accent-red); font-weight: bold;"' : '';
+            const label = player.type === 'computer' ? `CPU ${index + 1}` : `P${index + 1}`;
 
             row.innerHTML = `
-                <span class="opponent-name">P${index + 1}</span>
+                <span class="opponent-name">${label}</span>
                 <span class="opponent-cards" ${warningClass}>
                     ${count} <span style="font-size: 0.8em;">🎴</span>
                 </span>
@@ -710,11 +1057,14 @@ function renderGame() {
         ui.discardPile.appendChild(createCardElement(topCard, false));
     }
 
-    // Render Hand
+    // Render Hand for viewing player (usually a human)
     ui.playerHand.innerHTML = '';
-    state.players[state.currentPlayer].forEach((card, index) => {
+    const handToShow = state.players[state.viewingPlayer].hand;
+    handToShow.forEach((card, index) => {
         const el = createCardElement(card, true);
-        el.addEventListener('click', () => playCard(index));
+        if (state.viewingPlayer === state.currentPlayer && state.players[state.currentPlayer].type === 'human') {
+            el.addEventListener('click', () => playCard(index));
+        }
         ui.playerHand.appendChild(el);
     });
 

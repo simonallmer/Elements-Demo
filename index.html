@@ -25,7 +25,7 @@
             <div class="menu-buttons">
                 <button id="btn-start-game" class="btn-primary">START GAME</button>
                 <button id="btn-rules" class="btn-secondary">RULES</button>
-                <a href="https://simonallmer.com" class="btn-secondary" style="text-decoration: none;">BACK TO SA</a>
+                <a href="https://simonallmer.com/arcade" class="btn-secondary" style="text-decoration: none;">BACK TO ARCADE</a>
             </div>
             <div class="copyright">© 2023-2026 Simon Allmer Entertainment</div>
         </section>
@@ -40,6 +40,10 @@
                 <button class="btn-count" data-count="5">5</button>
                 <button class="btn-count" data-count="6">6</button>
             </div>
+            <!-- configuration for human/computer slots -->
+            <div id="player-type-config" class="player-type-config hidden"></div>
+            <button id="btn-reset-names" class="btn-secondary hidden">RESET NAMES</button>
+            <button id="btn-begin-game" class="btn-primary hidden">BEGIN GAME</button>
             <button id="btn-back-menu" class="btn-text">BACK</button>
         </section>
 
@@ -59,6 +63,7 @@
                     <span id="current-player-display">PLAYER 1</span>
                     <span id="card-count-display">Cards: 8</span>
                 </div>
+                <div id="player-circle"></div>
                 <button id="btn-menu-game" class="btn-icon" aria-label="Menu">
                     <svg viewBox="0 0 24 24" width="24" height="24">
                         <path fill="currentColor"
@@ -111,6 +116,9 @@
                         color, you must stick to it for that turn.</p>
                     <p><strong>DRAWING:</strong> If you can't play, draw 3 cards and skip your turn. The direction
                         reverses.</p>
+                    <p><strong>COMPUTER OPPONENTS:</strong> You can configure some players to be controlled by the
+                        game. Computers take their turns automatically; you will see each card they play while
+                        your own hand remains visible. They play at a medium intelligence level.</p>
 
                     <h3 style="margin-top: 20px; margin-bottom: 10px; color: #fff;">CARD TYPES</h3>
 
@@ -232,7 +240,9 @@
                 </div>
                 <div class="pause-actions">
                     <button id="btn-resume" class="btn-primary">RESUME GAME</button>
+                    <button id="btn-pause-rules" class="btn-secondary">RULES</button>
                     <button id="btn-end-game" class="btn-danger">END GAME</button>
+                    <a href="https://simonallmer.com/arcade" class="btn-secondary" style="text-decoration: none; display: inline-block; margin-top: 10px;">BACK TO ARCADE</a>
                 </div>
             </div>
         </div>
