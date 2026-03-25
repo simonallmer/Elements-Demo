@@ -11,7 +11,8 @@
     --card-border: 8px;
     --shape-size: 55px;
     --pip-size: 22px;
-    --sa-font-size: 0.6rem;
+    --sa-logo-width: 18px;
+    --sa-logo-height: 10px;
     --font-main: 'Outfit', sans-serif;
     --font-title: 'Zen Tokyo Zoo', cursive;
 }
@@ -290,11 +291,16 @@ button {
     border: 2px solid transparent;
 }
 
-.btn-count:hover,
-.btn-count.selected {
+.btn-count:hover {
     border-color: var(--accent-blue);
     background: rgba(0, 240, 255, 0.2);
     box-shadow: 0 0 15px var(--accent-blue);
+}
+
+.btn-count.selected {
+    border-color: #fff !important;
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
 }
 
 /* human/computer selector rows */
@@ -533,18 +539,21 @@ button {
     opacity: 1;
 }
 
-/* SA Logo */
+/* SA Logo Image */
 .card-face::after {
-    content: 'SA';
+    content: '';
     position: absolute;
-    bottom: 4px;
+    bottom: 6px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: var(--sa-font-size);
-    font-weight: bold;
-    color: rgba(0, 0, 0, 0.3);
-    font-family: sans-serif;
-    letter-spacing: 1px;
+    width: var(--sa-logo-width);
+    height: var(--sa-logo-height);
+    background-image: url('Logos/SALogoBig.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0);
+    opacity: 0.25;
 }
 
 /* Center Shape */
@@ -686,7 +695,8 @@ button {
 }
 
 .card.elements .card-face::after {
-    color: #555;
+    filter: brightness(0) invert(0.6);
+    opacity: 0.5;
 }
 
 /* Single Card Special Symbols */
@@ -900,7 +910,8 @@ button {
         --card-border: 5px;
         --shape-size: 38px;
         --pip-size: 16px;
-        --sa-font-size: 0.5rem;
+        --sa-logo-width: 15px;
+        --sa-logo-height: 8px;
     }
 
     h1.game-title {

@@ -220,25 +220,22 @@ function init() {
 
     ui.passDeviceBtn.addEventListener('click', startTurn);
 
-    // Player Count Selection
-    document.querySelectorAll('.player-count-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.player-count-btn').forEach(b => b.classList.remove('selected'));
-            e.target.classList.add('selected');
-        });
-    });
-
-    // Player Count Buttons (now used to configure types)
+    // Player Count Selection & Configuration
     document.querySelectorAll('.btn-count').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const button = e.currentTarget;
+            
             // Restricted modes for demo
             if (button.classList.contains('restricted')) {
                 document.getElementById('demo-info-modal').classList.remove('hidden');
                 return;
             }
 
-            const count = parseInt(e.target.dataset.count);
+            // Visual toggle
+            document.querySelectorAll('.btn-count').forEach(b => b.classList.remove('selected'));
+            button.classList.add('selected');
+
+            const count = parseInt(button.dataset.count);
             selectedPlayerCount = count;
             // reset previous types
             selectedPlayerTypes = Array(count).fill('human');
@@ -280,6 +277,7 @@ function init() {
         // clear any configuration UI
         selectedPlayerCount = null;
         selectedPlayerTypes = [];
+        document.querySelectorAll('.btn-count').forEach(b => b.classList.remove('selected'));
         const config = document.getElementById('player-type-config');
         config.classList.add('hidden');
         config.innerHTML = '';
