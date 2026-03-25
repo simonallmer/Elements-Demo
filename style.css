@@ -8,6 +8,10 @@
     --card-width: 120px;
     --card-height: 168px;
     --hand-height: 240px;
+    --card-border: 8px;
+    --shape-size: 55px;
+    --pip-size: 22px;
+    --sa-font-size: 0.6rem;
     --font-main: 'Outfit', sans-serif;
     --font-title: 'Zen Tokyo Zoo', cursive;
 }
@@ -510,7 +514,7 @@ button {
     display: flex;
     justify-content: center;
     align-items: center;
-    border: 8px solid rgba(255, 255, 255, 0.2);
+    border: var(--card-border) solid rgba(255, 255, 255, 0.2);
     /* Inner frame effect */
     box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.1);
     background: currentColor;
@@ -536,7 +540,7 @@ button {
     bottom: 4px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 0.6rem;
+    font-size: var(--sa-font-size);
     font-weight: bold;
     color: rgba(0, 0, 0, 0.3);
     font-family: sans-serif;
@@ -545,8 +549,8 @@ button {
 
 /* Center Shape */
 .center-shape {
-    width: 55px;
-    height: 55px;
+    width: var(--shape-size);
+    height: var(--shape-size);
     z-index: 2;
     display: flex;
     justify-content: center;
@@ -557,8 +561,8 @@ button {
 /* Corner Pips */
 .corner-pip {
     position: absolute;
-    width: 22px;
-    height: 22px;
+    width: var(--pip-size);
+    height: var(--pip-size);
     z-index: 2;
     display: flex;
     justify-content: center;
@@ -647,13 +651,14 @@ button {
 
 .card.white .card-face {
     border-color: #fff;
-    border: 8px solid #e9ecef;
+    border: var(--card-border) solid #e9ecef;
 }
 
 /* Elements Card Specifics */
 .card.elements {
     color: #1a1a1a;
-    border-color: #444;
+    border-color: #fff;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
 }
 
 .card.elements .card-face {
@@ -662,14 +667,16 @@ button {
 }
 
 .card.elements .card-inner {
-    background-image:
-        repeating-linear-gradient(45deg, #222 0, #222 10px, #111 10px, #111 20px);
+    background: linear-gradient(135deg, #333, #000);
+    opacity: 1;
 }
 
 .card.elements .shape-svg {
     stroke: #fff;
     fill: #fff;
     filter: drop-shadow(0 0 5px #fff) drop-shadow(0 0 10px #fff);
+    stroke-dasharray: 5, 5;
+    animation: spin-slow 10s linear infinite;
 }
 
 .card.elements .corner-pip .shape-svg {
@@ -706,23 +713,6 @@ button {
 
 .no-shape-symbol::before {
     transform: translate(-50%, -50%) rotate(-45deg);
-}
-
-/* Elements Card */
-.card.elements .card-inner {
-    background: linear-gradient(135deg, #333, #000);
-    opacity: 1;
-}
-
-.card.elements {
-    border-color: #fff;
-}
-
-.card.elements .shape-svg {
-    fill: transparent;
-    stroke: #fff;
-    stroke-dasharray: 5, 5;
-    animation: spin-slow 10s linear infinite;
 }
 
 @keyframes spin-slow {
@@ -907,6 +897,10 @@ button {
         --card-width: 85px;
         --card-height: 120px;
         --hand-height: 180px;
+        --card-border: 5px;
+        --shape-size: 38px;
+        --pip-size: 16px;
+        --sa-font-size: 0.5rem;
     }
 
     h1.game-title {
@@ -969,7 +963,7 @@ button {
     }
 
     .hand-scroll {
-        gap: -45px;
+        gap: -28px;
     }
 
     .controls-area {
@@ -1000,6 +994,10 @@ button {
     :root {
         --card-width: 70px;
         --card-height: 98px;
+        --card-border: 4px;
+        --shape-size: 32px;
+        --pip-size: 14px;
+        --sa-font-size: 0.45rem;
     }
 
     h1.game-title {
@@ -1021,6 +1019,10 @@ button {
     .hand-area {
         padding: 0 20px;
     }
+
+    .hand-scroll {
+        gap: -24px;
+    }
 }
 
 /* Landscape Mode Adjustments */
@@ -1029,6 +1031,10 @@ button {
         --card-width: 55px;
         --card-height: 77px;
         --hand-height: 100px;
+        --card-border: 3px;
+        --shape-size: 24px;
+        --pip-size: 10px;
+        --sa-font-size: 0.4rem;
     }
 
     .game-header {
