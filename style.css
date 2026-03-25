@@ -112,6 +112,8 @@ h1.game-title {
     margin-bottom: 3rem;
     font-weight: 700;
     opacity: 0.8;
+    text-align: center;
+    width: 100%;
 }
 
 h2 {
