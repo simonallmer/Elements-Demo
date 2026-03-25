@@ -29,6 +29,87 @@ let state = {
     sortMode: 'shape' // 'color' or 'shape' (starts as 'shape' so first click becomes 'color')
 };
 
+// --- Demo Manager ---
+const DemoManager = {
+    TIME_LIMIT: 600, // 10 minutes in seconds
+    STORAGE_KEY: 'elements_demo_state',
+    timerInterval: null,
+    timeLeft: 600,
+
+    init() {
+        this.loadState();
+        this.startTimer();
+        this.updateDisplay();
+
+        // Event listeners for demo UI
+        document.getElementById('demo-timer').addEventListener('click', () => {
+            document.getElementById('demo-info-modal').classList.remove('hidden');
+        });
+
+        document.getElementById('btn-close-demo-info').addEventListener('click', () => {
+            document.getElementById('demo-info-modal').classList.add('hidden');
+        });
+    },
+
+    loadState() {
+        const saved = localStorage.getItem(this.STORAGE_KEY);
+        const now = new Date();
+        const today = now.toLocaleDateString();
+
+        if (saved) {
+            const data = JSON.parse(saved);
+            if (data.lastUpdateDate === today) {
+                this.timeLeft = data.timeLeft;
+            } else {
+                // New day! Reset
+                this.timeLeft = this.TIME_LIMIT;
+            }
+        } else {
+            this.timeLeft = this.TIME_LIMIT;
+        }
+        this.saveState();
+    },
+
+    saveState() {
+        const now = new Date();
+        const today = now.toLocaleDateString();
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify({
+            timeLeft: this.timeLeft,
+            lastUpdateDate: today
+        }));
+    },
+
+    startTimer() {
+        if (this.timerInterval) clearInterval(this.timerInterval);
+        this.timerInterval = setInterval(() => {
+            if (this.timeLeft > 0) {
+                this.timeLeft--;
+                this.updateDisplay();
+                if (this.timeLeft % 5 === 0) this.saveState(); // Save every 5 seconds to be efficient
+                if (this.timeLeft <= 0) {
+                    this.onTimeExpired();
+                }
+            }
+        }, 1000);
+    },
+
+    updateDisplay() {
+        const minutes = Math.floor(this.timeLeft / 60);
+        const seconds = this.timeLeft % 60;
+        const display = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        const el = document.getElementById('demo-time-left');
+        if (el) el.textContent = display;
+    },
+
+    onTimeExpired() {
+        clearInterval(this.timerInterval);
+        this.saveState();
+        gameActive = false;
+        document.getElementById('time-expired-modal').classList.remove('hidden');
+    }
+};
+
+
 // flag to prevent computer turns from running when game is not active
 let gameActive = false;
 
@@ -133,6 +214,13 @@ function init() {
     // Player Count Buttons (now used to configure types)
     document.querySelectorAll('.btn-count').forEach(btn => {
         btn.addEventListener('click', (e) => {
+            const button = e.currentTarget;
+            // Restricted modes for demo
+            if (button.classList.contains('restricted')) {
+                document.getElementById('demo-info-modal').classList.remove('hidden');
+                return;
+            }
+
             const count = parseInt(e.target.dataset.count);
             selectedPlayerCount = count;
             // reset previous types
@@ -149,6 +237,7 @@ function init() {
             document.getElementById('btn-begin-game').disabled = false;
         });
     });
+
 
     // name reset button
     document.getElementById('btn-reset-names').addEventListener('click', () => {
@@ -221,7 +310,11 @@ function init() {
 
     // Start at menu to initialize state
     showScreen('menu');
+
+    // Initialize Demo Manager
+    DemoManager.init();
 }
+
 
 // create toggle rows for each player slot when count is chosen
 function renderPlayerTypeSelectors(count) {

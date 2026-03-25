@@ -101,8 +101,17 @@ h1.game-title {
     font-size: 1.5rem;
     letter-spacing: 10px;
     color: #fff;
-    margin-bottom: 3rem;
+    margin-bottom: 1rem;
     text-align: center;
+}
+
+.demo-version-label {
+    font-size: 0.9rem;
+    letter-spacing: 4px;
+    color: #dfc8a0;
+    margin-bottom: 3rem;
+    font-weight: 700;
+    opacity: 0.8;
 }
 
 h2 {
@@ -1158,4 +1167,118 @@ button {
 .btn-danger:hover {
     background: var(--accent-red);
     color: #fff;
+}
+
+/* --- Demo Version Restrictions --- */
+
+.demo-timer {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #2a2620; /* Dark brownish grey to match Elements style */
+    color: #dfc8a0; /* Golden text */
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-family: var(--font-main);
+    font-weight: 500;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease;
+    border: 1px solid rgba(223, 200, 160, 0.1);
+}
+
+.demo-timer:hover {
+    transform: translateY(-2px);
+    background: #36322a;
+}
+
+.demo-label {
+    opacity: 0.6;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+#demo-time-left {
+    font-variant-numeric: tabular-nums;
+    font-size: 1rem;
+}
+
+/* Restricted Player Modes */
+.btn-count.restricted {
+    opacity: 0.4;
+    filter: grayscale(1);
+    position: relative;
+    cursor: pointer;
+}
+
+.btn-count.restricted:hover {
+    opacity: 0.7;
+    filter: none;
+    border-color: #dfc8a0;
+    box-shadow: 0 0 15px rgba(223, 200, 160, 0.3);
+}
+
+/* Demo Modals Styling */
+.demo-modal {
+    background: #1a1815 !important;
+    border: 1px solid #dfc8a0 !important;
+    padding: 40px !important;
+    max-width: 500px !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9) !important;
+}
+
+.arcade-title, .expired-title {
+    font-family: var(--font-title) !important;
+    color: #dfc8a0 !important;
+    font-size: 1.8rem !important;
+    letter-spacing: 3px !important;
+    margin-bottom: 25px !important;
+    text-transform: uppercase;
+}
+
+.arcade-text, .expired-text {
+    color: #f0f0f0;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+}
+
+.demo-modal .btn-primary {
+    width: 200px;
+    background: #dfc8a0;
+    color: #1a1815;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+}
+
+.demo-modal .btn-text {
+    color: #aaa;
+    margin-top: 10px;
+}
+
+.demo-modal .btn-text:hover {
+    color: #fff;
+}
+
+/* Expired Overlay Specifics */
+#time-expired-modal {
+    backdrop-filter: blur(15px);
+    z-index: 2000;
+}
+
+#time-expired-modal .modal-content {
+    animation: modalPop 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes modalPop {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
 }

@@ -15,11 +15,18 @@
 <body>
 
     <div id="app">
+        <!-- Demo Timer -->
+        <div id="demo-timer" class="demo-timer">
+            <span class="demo-label">DEMO</span>
+            <span id="demo-time-left">10:00</span>
+        </div>
+
         <!-- Main Menu -->
         <section id="main-menu" class="screen active">
             <div class="logo-container">
                 <h1 class="game-title">ELEMENTS</h1>
                 <div class="subtitle">要素</div>
+                <div class="demo-version-label">DEMO VERSION</div>
             </div>
 
             <div class="menu-buttons">
@@ -37,8 +44,8 @@
                 <button class="btn-count" data-count="2">2</button>
                 <button class="btn-count" data-count="3">3</button>
                 <button class="btn-count" data-count="4">4</button>
-                <button class="btn-count" data-count="5">5</button>
-                <button class="btn-count" data-count="6">6</button>
+                <button class="btn-count restricted" data-count="5">5</button>
+                <button class="btn-count restricted" data-count="6">6</button>
             </div>
             <!-- configuration for human/computer slots -->
             <div id="player-type-config" class="player-type-config hidden"></div>
@@ -244,6 +251,25 @@
                     <button id="btn-end-game" class="btn-danger">END GAME</button>
                     <a href="https://simonallmer.com/arcade" class="btn-secondary" style="text-decoration: none; display: inline-block; margin-top: 10px;">BACK TO ARCADE</a>
                 </div>
+            </div>
+        </div>
+
+        <!-- Demo Info Modal -->
+        <div id="demo-info-modal" class="modal hidden">
+            <div class="modal-content demo-modal">
+                <h2 class="arcade-title">ARCADE SUBSCRIPTION</h2>
+                <p class="arcade-text">ACCESS UNLIMITED PLAY WITH AN ARCADE SUBSCRIPTION.</p>
+                <a href="https://simonallmer.com/aboutarcade" class="btn-primary" style="text-decoration: none;">LEARN MORE</a>
+                <button id="btn-close-demo-info" class="btn-text">CLOSE</button>
+            </div>
+        </div>
+
+        <!-- Time Expired Modal -->
+        <div id="time-expired-modal" class="modal hidden">
+            <div class="modal-content demo-modal">
+                <h2 class="expired-title">Your daily demo time has ended.</h2>
+                <p class="expired-text">Continue playing and unlock all features with an Arcade Subscription.</p>
+                <a href="https://simonallmer.com/arcade" class="btn-primary" style="text-decoration: none;">SUBSCRIBE</a>
             </div>
         </div>
 
