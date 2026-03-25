@@ -106,6 +106,23 @@ const DemoManager = {
         this.saveState();
         gameActive = false;
         document.getElementById('time-expired-modal').classList.remove('hidden');
+    },
+
+    resetTimer() {
+        this.timeLeft = this.TIME_LIMIT;
+        this.saveState();
+        this.updateDisplay();
+        this.startTimer();
+        document.getElementById('time-expired-modal').classList.add('hidden');
+        
+        // Reactivate game if we were on the game screen
+        if (currentScreenName === 'game') {
+            gameActive = true;
+            // Resume computer turns if it's currently a computer's turn
+            if (state.players[state.currentPlayer] && state.players[state.currentPlayer].type === 'computer') {
+                handleComputerTurn();
+            }
+        }
     }
 };
 
@@ -313,6 +330,23 @@ function init() {
 
     // Initialize Demo Manager
     DemoManager.init();
+
+    // Cheatcodes
+    window.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'r') {
+            // Check if user is currently typing in an input field
+            const active = document.activeElement;
+            const isInput = active && (
+                active.tagName === 'INPUT' || 
+                active.tagName === 'TEXTAREA' || 
+                active.isContentEditable
+            );
+            
+            if (!isInput) {
+                DemoManager.resetTimer();
+            }
+        }
+    });
 }
 
 
